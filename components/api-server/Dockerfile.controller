@@ -1,0 +1,31 @@
+FROM registry.access.redhat.com/ubi9/go-toolset:1.25 AS builder
+
+USER root
+
+WORKDIR /workspace
+
+COPY rh-trex-ai/ /rh-trex-ai/
+
+COPY hypershell/components/api-server/go.mod hypershell/components/api-server/go.sum ./
+COPY hypershell/components/api-server/cmd/ cmd/
+COPY hypershell/components/api-server/pkg/ pkg/
+COPY hypershell/components/api-server/plugins/ plugins/
+COPY hypershell/components/api-server/openapi/ openapi/
+COPY hypershell/components/api-server/proto/ proto/
+COPY hypershell/components/control-plane/ components/control-plane/
+
+WORKDIR /workspace/components/control-plane
+RUN go build -ldflags="-s -w" -o /workspace/hypershell-controller ./cmd/hypershell-controller
+
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+
+WORKDIR /
+
+COPY --from=builder /workspace/hypershell-controller /usr/local/bin/
+
+ENTRYPOINT ["/usr/local/bin/hypershell-controller"]
+
+LABEL name="hypershell-controller" \
+      version="0.0.1" \
+      summary="HyperShell Controller" \
+      description="Control plane that reconciles HyperShell resources via gRPC watch streams"

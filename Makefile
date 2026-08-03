@@ -1,147 +1,31 @@
-BINARY_NAME=hypershell
 CONTAINER_ENGINE?=$(shell command -v podman 2>/dev/null || echo docker)
 
-# Version information for ldflags
-git_sha:=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-git_dirty:=$(shell git diff --quiet 2>/dev/null || echo "-modified")
-build_version:=$(git_sha)$(git_dirty)
-build_time:=$(shell date -u '+%Y-%m-%d %H:%M:%S UTC')
-ldflags=-X github.com/openshift-online/hypershell/pkg/api.Version=$(build_version) -X 'github.com/openshift-online/hypershell/pkg/api.BuildTime=$(build_time)'
+.PHONY: build-all
+build-all:
+	cd components/api-server && $(MAKE) image
+	cd components/api-server && $(MAKE) image-controller
 
-.PHONY: binary
-binary:
-	@echo "Building version: $(build_version)"
-	go build -ldflags="$(ldflags)" -o $(BINARY_NAME) ./cmd/hypershell
+.PHONY: lint
+lint:
+	cd components/api-server && go fmt ./... && go vet ./...
+	cd components/control-plane && go fmt ./... && go vet ./...
 
-.PHONY: install
-install:
-	go install -ldflags="$(ldflags)" ./cmd/hypershell
-
-.PHONY: run
-run: binary
-	./$(BINARY_NAME) migrate
-	./$(BINARY_NAME) serve
-
-.PHONY: run-no-auth
-run-no-auth: binary
-	./$(BINARY_NAME) migrate
-	./$(BINARY_NAME) serve --enable-authz=false --enable-jwt=false
-
-.PHONY: test
-test: install
-	go test -v ./...
-
-.PHONY: test-integration
-test-integration: install
-	API_ENV=integration_testing go test -p 1 -v ./plugins/... -count=1
-
-.PHONY: clean
-clean:
-	rm -f $(BINARY_NAME)
-
-.PHONY: generate
-generate:
-	rm -rf pkg/api/openapi
-	$(CONTAINER_ENGINE) build -t $(BINARY_NAME)-openapi -f Dockerfile.openapi .
-	id=$$($(CONTAINER_ENGINE) create $(BINARY_NAME)-openapi) && \
-	$(CONTAINER_ENGINE) cp $$id:/local/pkg/api/openapi ./pkg/api/openapi && \
-	$(CONTAINER_ENGINE) rm $$id
-
-.PHONY: db/setup
-db/setup:
-	$(CONTAINER_ENGINE) run -d --name hypershell-postgres \
-		-p 5432:5432 \
-		-e POSTGRES_PASSWORD=postgres \
-		-e POSTGRES_USER=postgres \
-		-e POSTGRES_DB=hypershell \
-		postgres:13
-
-.PHONY: db/teardown
-db/teardown:
-	$(CONTAINER_ENGINE) stop hypershell-postgres || true
-	$(CONTAINER_ENGINE) rm hypershell-postgres || true
-
-.PHONY: db/login
-db/login:
-	$(CONTAINER_ENGINE) exec -it hypershell-postgres psql -U postgres -d hypershell
-
-.PHONY: proto
-proto:
-	cd proto && buf generate
-
-.PHONY: proto-clean
-proto-clean:
-	rm -rf pkg/api/grpc/
-
-KIND_CLUSTER_NAME?=hypershell-dev
-KIND_API_PORT?=23080
-IMAGE_NAME=hypershell
-CONTROLLER_IMAGE_NAME=hypershell-controller
-IMAGE_TAG=dev
-BUILD_CONTEXT=$(shell dirname $(shell pwd))
-
-.PHONY: image
-image:
-	$(CONTAINER_ENGINE) build -t $(IMAGE_NAME):$(IMAGE_TAG) \
-		-f Dockerfile \
-		--build-arg GIT_VERSION=$(build_version) \
-		--build-arg BUILD_TIME="$(build_time)" \
-		$(BUILD_CONTEXT)
-
-.PHONY: image-controller
-image-controller:
-	$(CONTAINER_ENGINE) build -t $(CONTROLLER_IMAGE_NAME):$(IMAGE_TAG) \
-		-f Dockerfile.controller \
-		$(BUILD_CONTEXT)
-
-.PHONY: images
-images: image image-controller
+.PHONY: test-all
+test-all:
+	cd components/api-server && $(MAKE) test
 
 .PHONY: kind-up
-kind-up: images
-	kind create cluster --name $(KIND_CLUSTER_NAME) --config deploy/kind/kind-config.yaml || true
-	rm -f /tmp/$(IMAGE_NAME)-$(IMAGE_TAG).tar /tmp/$(CONTROLLER_IMAGE_NAME)-$(IMAGE_TAG).tar
-	$(CONTAINER_ENGINE) save -o /tmp/$(IMAGE_NAME)-$(IMAGE_TAG).tar $(IMAGE_NAME):$(IMAGE_TAG)
-	kind load image-archive /tmp/$(IMAGE_NAME)-$(IMAGE_TAG).tar --name $(KIND_CLUSTER_NAME)
-	$(CONTAINER_ENGINE) save -o /tmp/$(CONTROLLER_IMAGE_NAME)-$(IMAGE_TAG).tar $(CONTROLLER_IMAGE_NAME):$(IMAGE_TAG)
-	kind load image-archive /tmp/$(CONTROLLER_IMAGE_NAME)-$(IMAGE_TAG).tar --name $(KIND_CLUSTER_NAME)
-	kubectl kustomize deploy/kind/ | kubectl apply -f -
-	@echo "Waiting for PostgreSQL..."
-	kubectl wait --for=condition=ready pod -l app=hypershell-postgres -n hypershell --timeout=120s
-	@echo "Waiting for API server..."
-	kubectl wait --for=condition=available deployment/hypershell-api-server -n hypershell --timeout=120s
-	@echo "Waiting for controller..."
-	kubectl wait --for=condition=available deployment/hypershell-controller -n hypershell --timeout=120s
-	@echo ""
-	@echo "HyperShell is running!"
-	@echo "  API: http://localhost:$(KIND_API_PORT)/api/hypershell/v1/fleets"
-	@echo "  API Server Logs: kubectl logs -f -l app=hypershell-api-server -n hypershell"
-	@echo "  Controller Logs: kubectl logs -f -l app=hypershell-controller -n hypershell"
+kind-up: build-all
+	cd components/api-server && $(MAKE) kind-up
 
 .PHONY: kind-down
 kind-down:
-	kind delete cluster --name $(KIND_CLUSTER_NAME)
+	cd components/api-server && $(MAKE) kind-down
 
 .PHONY: kind-rebuild
-kind-rebuild: images
-	rm -f /tmp/$(IMAGE_NAME)-$(IMAGE_TAG).tar /tmp/$(CONTROLLER_IMAGE_NAME)-$(IMAGE_TAG).tar
-	$(CONTAINER_ENGINE) save -o /tmp/$(IMAGE_NAME)-$(IMAGE_TAG).tar $(IMAGE_NAME):$(IMAGE_TAG)
-	kind load image-archive /tmp/$(IMAGE_NAME)-$(IMAGE_TAG).tar --name $(KIND_CLUSTER_NAME)
-	$(CONTAINER_ENGINE) save -o /tmp/$(CONTROLLER_IMAGE_NAME)-$(IMAGE_TAG).tar $(CONTROLLER_IMAGE_NAME):$(IMAGE_TAG)
-	kind load image-archive /tmp/$(CONTROLLER_IMAGE_NAME)-$(IMAGE_TAG).tar --name $(KIND_CLUSTER_NAME)
-	kubectl kustomize deploy/kind/ | kubectl apply -f -
-	kubectl rollout restart deployment/hypershell-api-server -n hypershell
-	kubectl rollout restart deployment/hypershell-controller -n hypershell
-	kubectl wait --for=condition=available deployment/hypershell-api-server -n hypershell --timeout=120s
-	kubectl wait --for=condition=available deployment/hypershell-controller -n hypershell --timeout=120s
+kind-rebuild:
+	cd components/api-server && $(MAKE) kind-rebuild
 
 .PHONY: kind-status
 kind-status:
-	@echo "=== Cluster ==="
-	kubectl cluster-info --context kind-$(KIND_CLUSTER_NAME) 2>/dev/null || echo "Cluster not running"
-	@echo ""
-	@echo "=== Pods ==="
-	kubectl get pods -n hypershell 2>/dev/null || echo "Namespace not found"
-	@echo ""
-	@echo "=== Services ==="
-	kubectl get svc -n hypershell 2>/dev/null || echo "Namespace not found"
+	cd components/api-server && $(MAKE) kind-status

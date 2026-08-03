@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	pb "github.com/openshift-online/hypershell/pkg/api/grpc/hypershell/v1"
+	pb "github.com/openshift-online/hypershell/components/api-server/pkg/api/grpc/hypershell/v1"
 	"github.com/openshift-online/hypershell/components/control-plane/internal/watcher"
 )
 
