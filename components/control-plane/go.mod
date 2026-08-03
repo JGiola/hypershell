@@ -3,7 +3,7 @@ module github.com/openshift-online/hypershell/components/control-plane
 go 1.25.0
 
 require (
-	github.com/openshift-online/hypershell v0.0.0-00010101000000-000000000000
+	github.com/openshift-online/hypershell/components/api-server v0.0.0-00010101000000-000000000000
 	google.golang.org/grpc v1.82.1
 )
 
@@ -15,4 +15,4 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
-replace github.com/openshift-online/hypershell => ../..
+replace github.com/openshift-online/hypershell/components/api-server => ../api-server

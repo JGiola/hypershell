@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	pb "github.com/openshift-online/hypershell/pkg/api/grpc/hypershell/v1"
+	pb "github.com/openshift-online/hypershell/components/api-server/pkg/api/grpc/hypershell/v1"
 	"google.golang.org/grpc"
 )
 
