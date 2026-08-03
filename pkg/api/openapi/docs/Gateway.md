@@ -1,0 +1,416 @@
+# Gateway
+
+## Properties
+
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+**Id** | Pointer to **string** |  | [optional] 
+**Kind** | Pointer to **string** |  | [optional] 
+**Href** | Pointer to **string** |  | [optional] 
+**CreatedAt** | Pointer to **time.Time** |  | [optional] 
+**UpdatedAt** | Pointer to **time.Time** |  | [optional] 
+**Name** | **string** |  | 
+**FleetId** | **string** |  | 
+**ClusterId** | **string** |  | 
+**ReleaseId** | **string** |  | 
+**DatabaseId** | **string** |  | 
+**Namespace** | **string** |  | 
+**ExternalDns** | Pointer to **string** |  | [optional] 
+**TlsMode** | Pointer to **string** |  | [optional] 
+**ServiceType** | Pointer to **string** |  | [optional] 
+**Status** | Pointer to **string** |  | [optional] 
+**Phase** | Pointer to **string** |  | [optional] 
+
+## Methods
+
+### NewGateway
+
+`func NewGateway(name string, fleetId string, clusterId string, releaseId string, databaseId string, namespace string, ) *Gateway`
+
+NewGateway instantiates a new Gateway object
+This constructor will assign default values to properties that have it defined,
+and makes sure properties required by API are set, but the set of arguments
+will change when the set of required properties is changed
+
+### NewGatewayWithDefaults
+
+`func NewGatewayWithDefaults() *Gateway`
+
+NewGatewayWithDefaults instantiates a new Gateway object
+This constructor will only assign default values to properties that have it defined,
+but it doesn't guarantee that properties required by API are set
+
+### GetId
+
+`func (o *Gateway) GetId() string`
+
+GetId returns the Id field if non-nil, zero value otherwise.
+
+### GetIdOk
+
+`func (o *Gateway) GetIdOk() (*string, bool)`
+
+GetIdOk returns a tuple with the Id field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetId
+
+`func (o *Gateway) SetId(v string)`
+
+SetId sets Id field to given value.
+
+### HasId
+
+`func (o *Gateway) HasId() bool`
+
+HasId returns a boolean if a field has been set.
+
+### GetKind
+
+`func (o *Gateway) GetKind() string`
+
+GetKind returns the Kind field if non-nil, zero value otherwise.
+
+### GetKindOk
+
+`func (o *Gateway) GetKindOk() (*string, bool)`
+
+GetKindOk returns a tuple with the Kind field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetKind
+
+`func (o *Gateway) SetKind(v string)`
+
+SetKind sets Kind field to given value.
+
+### HasKind
+
+`func (o *Gateway) HasKind() bool`
+
+HasKind returns a boolean if a field has been set.
+
+### GetHref
+
+`func (o *Gateway) GetHref() string`
+
+GetHref returns the Href field if non-nil, zero value otherwise.
+
+### GetHrefOk
+
+`func (o *Gateway) GetHrefOk() (*string, bool)`
+
+GetHrefOk returns a tuple with the Href field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetHref
+
+`func (o *Gateway) SetHref(v string)`
+
+SetHref sets Href field to given value.
+
+### HasHref
+
+`func (o *Gateway) HasHref() bool`
+
+HasHref returns a boolean if a field has been set.
+
+### GetCreatedAt
+
+`func (o *Gateway) GetCreatedAt() time.Time`
+
+GetCreatedAt returns the CreatedAt field if non-nil, zero value otherwise.
+
+### GetCreatedAtOk
+
+`func (o *Gateway) GetCreatedAtOk() (*time.Time, bool)`
+
+GetCreatedAtOk returns a tuple with the CreatedAt field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetCreatedAt
+
+`func (o *Gateway) SetCreatedAt(v time.Time)`
+
+SetCreatedAt sets CreatedAt field to given value.
+
+### HasCreatedAt
+
+`func (o *Gateway) HasCreatedAt() bool`
+
+HasCreatedAt returns a boolean if a field has been set.
+
+### GetUpdatedAt
+
+`func (o *Gateway) GetUpdatedAt() time.Time`
+
+GetUpdatedAt returns the UpdatedAt field if non-nil, zero value otherwise.
+
+### GetUpdatedAtOk
+
+`func (o *Gateway) GetUpdatedAtOk() (*time.Time, bool)`
+
+GetUpdatedAtOk returns a tuple with the UpdatedAt field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetUpdatedAt
+
+`func (o *Gateway) SetUpdatedAt(v time.Time)`
+
+SetUpdatedAt sets UpdatedAt field to given value.
+
+### HasUpdatedAt
+
+`func (o *Gateway) HasUpdatedAt() bool`
+
+HasUpdatedAt returns a boolean if a field has been set.
+
+### GetName
+
+`func (o *Gateway) GetName() string`
+
+GetName returns the Name field if non-nil, zero value otherwise.
+
+### GetNameOk
+
+`func (o *Gateway) GetNameOk() (*string, bool)`
+
+GetNameOk returns a tuple with the Name field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetName
+
+`func (o *Gateway) SetName(v string)`
+
+SetName sets Name field to given value.
+
+
+### GetFleetId
+
+`func (o *Gateway) GetFleetId() string`
+
+GetFleetId returns the FleetId field if non-nil, zero value otherwise.
+
+### GetFleetIdOk
+
+`func (o *Gateway) GetFleetIdOk() (*string, bool)`
+
+GetFleetIdOk returns a tuple with the FleetId field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetFleetId
+
+`func (o *Gateway) SetFleetId(v string)`
+
+SetFleetId sets FleetId field to given value.
+
+
+### GetClusterId
+
+`func (o *Gateway) GetClusterId() string`
+
+GetClusterId returns the ClusterId field if non-nil, zero value otherwise.
+
+### GetClusterIdOk
+
+`func (o *Gateway) GetClusterIdOk() (*string, bool)`
+
+GetClusterIdOk returns a tuple with the ClusterId field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetClusterId
+
+`func (o *Gateway) SetClusterId(v string)`
+
+SetClusterId sets ClusterId field to given value.
+
+
+### GetReleaseId
+
+`func (o *Gateway) GetReleaseId() string`
+
+GetReleaseId returns the ReleaseId field if non-nil, zero value otherwise.
+
+### GetReleaseIdOk
+
+`func (o *Gateway) GetReleaseIdOk() (*string, bool)`
+
+GetReleaseIdOk returns a tuple with the ReleaseId field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetReleaseId
+
+`func (o *Gateway) SetReleaseId(v string)`
+
+SetReleaseId sets ReleaseId field to given value.
+
+
+### GetDatabaseId
+
+`func (o *Gateway) GetDatabaseId() string`
+
+GetDatabaseId returns the DatabaseId field if non-nil, zero value otherwise.
+
+### GetDatabaseIdOk
+
+`func (o *Gateway) GetDatabaseIdOk() (*string, bool)`
+
+GetDatabaseIdOk returns a tuple with the DatabaseId field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetDatabaseId
+
+`func (o *Gateway) SetDatabaseId(v string)`
+
+SetDatabaseId sets DatabaseId field to given value.
+
+
+### GetNamespace
+
+`func (o *Gateway) GetNamespace() string`
+
+GetNamespace returns the Namespace field if non-nil, zero value otherwise.
+
+### GetNamespaceOk
+
+`func (o *Gateway) GetNamespaceOk() (*string, bool)`
+
+GetNamespaceOk returns a tuple with the Namespace field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetNamespace
+
+`func (o *Gateway) SetNamespace(v string)`
+
+SetNamespace sets Namespace field to given value.
+
+
+### GetExternalDns
+
+`func (o *Gateway) GetExternalDns() string`
+
+GetExternalDns returns the ExternalDns field if non-nil, zero value otherwise.
+
+### GetExternalDnsOk
+
+`func (o *Gateway) GetExternalDnsOk() (*string, bool)`
+
+GetExternalDnsOk returns a tuple with the ExternalDns field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetExternalDns
+
+`func (o *Gateway) SetExternalDns(v string)`
+
+SetExternalDns sets ExternalDns field to given value.
+
+### HasExternalDns
+
+`func (o *Gateway) HasExternalDns() bool`
+
+HasExternalDns returns a boolean if a field has been set.
+
+### GetTlsMode
+
+`func (o *Gateway) GetTlsMode() string`
+
+GetTlsMode returns the TlsMode field if non-nil, zero value otherwise.
+
+### GetTlsModeOk
+
+`func (o *Gateway) GetTlsModeOk() (*string, bool)`
+
+GetTlsModeOk returns a tuple with the TlsMode field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetTlsMode
+
+`func (o *Gateway) SetTlsMode(v string)`
+
+SetTlsMode sets TlsMode field to given value.
+
+### HasTlsMode
+
+`func (o *Gateway) HasTlsMode() bool`
+
+HasTlsMode returns a boolean if a field has been set.
+
+### GetServiceType
+
+`func (o *Gateway) GetServiceType() string`
+
+GetServiceType returns the ServiceType field if non-nil, zero value otherwise.
+
+### GetServiceTypeOk
+
+`func (o *Gateway) GetServiceTypeOk() (*string, bool)`
+
+GetServiceTypeOk returns a tuple with the ServiceType field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetServiceType
+
+`func (o *Gateway) SetServiceType(v string)`
+
+SetServiceType sets ServiceType field to given value.
+
+### HasServiceType
+
+`func (o *Gateway) HasServiceType() bool`
+
+HasServiceType returns a boolean if a field has been set.
+
+### GetStatus
+
+`func (o *Gateway) GetStatus() string`
+
+GetStatus returns the Status field if non-nil, zero value otherwise.
+
+### GetStatusOk
+
+`func (o *Gateway) GetStatusOk() (*string, bool)`
+
+GetStatusOk returns a tuple with the Status field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetStatus
+
+`func (o *Gateway) SetStatus(v string)`
+
+SetStatus sets Status field to given value.
+
+### HasStatus
+
+`func (o *Gateway) HasStatus() bool`
+
+HasStatus returns a boolean if a field has been set.
+
+### GetPhase
+
+`func (o *Gateway) GetPhase() string`
+
+GetPhase returns the Phase field if non-nil, zero value otherwise.
+
+### GetPhaseOk
+
+`func (o *Gateway) GetPhaseOk() (*string, bool)`
+
+GetPhaseOk returns a tuple with the Phase field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetPhase
+
+`func (o *Gateway) SetPhase(v string)`
+
+SetPhase sets Phase field to given value.
+
+### HasPhase
+
+`func (o *Gateway) HasPhase() bool`
+
+HasPhase returns a boolean if a field has been set.
+
+
+[[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
+
+

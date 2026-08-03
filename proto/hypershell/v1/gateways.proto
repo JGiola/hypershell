@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package hypershell.v1;
+
+option go_package = "github.com/openshift-online/hypershell/pkg/api/grpc/hypershell/v1;hypershell_v1";
+
+import "hypershell/v1/common.proto";
+
+message Gateway {
+  ObjectReference metadata = 1;
+  string name = 2;
+  string fleet_id = 3;
+  string cluster_id = 4;
+  string release_id = 5;
+  string database_id = 6;
+  string namespace = 7;
+  optional string external_dns = 8;
+  optional string tls_mode = 9;
+  optional string service_type = 10;
+  optional string status = 11;
+  optional string phase = 12;
+}
+
+message CreateGatewayRequest {
+  string name = 1;
+  string fleet_id = 2;
+  string cluster_id = 3;
+  string release_id = 4;
+  string database_id = 5;
+  string namespace = 6;
+  optional string external_dns = 7;
+  optional string tls_mode = 8;
+  optional string service_type = 9;
+  optional string status = 10;
+  optional string phase = 11;
+}
+
+message GetGatewayRequest {
+  string id = 1;
+}
+
+message UpdateGatewayRequest {
+  string id = 1;
+  optional string name = 2;
+  optional string fleet_id = 3;
+  optional string cluster_id = 4;
+  optional string release_id = 5;
+  optional string database_id = 6;
+  optional string namespace = 7;
+  optional string external_dns = 8;
+  optional string tls_mode = 9;
+  optional string service_type = 10;
+  optional string status = 11;
+  optional string phase = 12;
+}
+
+message DeleteGatewayRequest {
+  string id = 1;
+}
+
+message ListGatewaysRequest {
+  int32 page = 1;
+  int32 size = 2;
+}
+
+message ListGatewaysResponse {
+  repeated Gateway items = 1;
+  ListMeta metadata = 2;
+}
+
+message DeleteGatewayResponse {}
+
+message WatchGatewaysRequest {}
+
+message GatewayWatchEvent {
+  EventType type = 1;
+  Gateway gateway = 2;
+  string resource_id = 3;
+}
+
+service GatewayService {
+  rpc GetGateway(GetGatewayRequest) returns (Gateway);
+  rpc CreateGateway(CreateGatewayRequest) returns (Gateway);
+  rpc UpdateGateway(UpdateGatewayRequest) returns (Gateway);
+  rpc DeleteGateway(DeleteGatewayRequest) returns (DeleteGatewayResponse);
+  rpc ListGateways(ListGatewaysRequest) returns (ListGatewaysResponse);
+  rpc WatchGateways(WatchGatewaysRequest) returns (stream GatewayWatchEvent);
+}

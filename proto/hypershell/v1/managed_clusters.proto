@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package hypershell.v1;
+
+option go_package = "github.com/openshift-online/hypershell/pkg/api/grpc/hypershell/v1;hypershell_v1";
+
+import "hypershell/v1/common.proto";
+
+message ManagedCluster {
+  ObjectReference metadata = 1;
+  string name = 2;
+  string fleet_id = 3;
+  string provider = 4;
+  optional string region = 5;
+  string kubeconfig_secret = 6;
+  optional string status = 7;
+  optional string api_server_url = 8;
+}
+
+message CreateManagedClusterRequest {
+  string name = 1;
+  string fleet_id = 2;
+  string provider = 3;
+  optional string region = 4;
+  string kubeconfig_secret = 5;
+  optional string status = 6;
+  optional string api_server_url = 7;
+}
+
+message GetManagedClusterRequest {
+  string id = 1;
+}
+
+message UpdateManagedClusterRequest {
+  string id = 1;
+  optional string name = 2;
+  optional string fleet_id = 3;
+  optional string provider = 4;
+  optional string region = 5;
+  optional string kubeconfig_secret = 6;
+  optional string status = 7;
+  optional string api_server_url = 8;
+}
+
+message DeleteManagedClusterRequest {
+  string id = 1;
+}
+
+message ListManagedClustersRequest {
+  int32 page = 1;
+  int32 size = 2;
+}
+
+message ListManagedClustersResponse {
+  repeated ManagedCluster items = 1;
+  ListMeta metadata = 2;
+}
+
+message DeleteManagedClusterResponse {}
+
+message WatchManagedClustersRequest {}
+
+message ManagedClusterWatchEvent {
+  EventType type = 1;
+  ManagedCluster managedCluster = 2;
+  string resource_id = 3;
+}
+
+service ManagedClusterService {
+  rpc GetManagedCluster(GetManagedClusterRequest) returns (ManagedCluster);
+  rpc CreateManagedCluster(CreateManagedClusterRequest) returns (ManagedCluster);
+  rpc UpdateManagedCluster(UpdateManagedClusterRequest) returns (ManagedCluster);
+  rpc DeleteManagedCluster(DeleteManagedClusterRequest) returns (DeleteManagedClusterResponse);
+  rpc ListManagedClusters(ListManagedClustersRequest) returns (ListManagedClustersResponse);
+  rpc WatchManagedClusters(WatchManagedClustersRequest) returns (stream ManagedClusterWatchEvent);
+}

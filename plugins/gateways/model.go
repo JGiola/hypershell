@@ -1,0 +1,51 @@
+package gateways
+
+import (
+	"github.com/openshift-online/rh-trex-ai/pkg/api"
+	"gorm.io/gorm"
+)
+
+type Gateway struct {
+	api.Meta
+	Name        string  `json:"name"`
+	FleetId     string  `json:"fleet_id"`
+	ClusterId   string  `json:"cluster_id"`
+	ReleaseId   string  `json:"release_id"`
+	DatabaseId  string  `json:"database_id"`
+	Namespace   string  `json:"namespace"`
+	ExternalDns *string `json:"external_dns"`
+	TlsMode     *string `json:"tls_mode"`
+	ServiceType *string `json:"service_type"`
+	Status      *string `json:"status"`
+	Phase       *string `json:"phase"`
+}
+
+type GatewayList []*Gateway
+type GatewayIndex map[string]*Gateway
+
+func (l GatewayList) Index() GatewayIndex {
+	index := GatewayIndex{}
+	for _, o := range l {
+		index[o.ID] = o
+	}
+	return index
+}
+
+func (d *Gateway) BeforeCreate(tx *gorm.DB) error {
+	d.ID = api.NewID()
+	return nil
+}
+
+type GatewayPatchRequest struct {
+	Name        *string `json:"name,omitempty"`
+	FleetId     *string `json:"fleet_id,omitempty"`
+	ClusterId   *string `json:"cluster_id,omitempty"`
+	ReleaseId   *string `json:"release_id,omitempty"`
+	DatabaseId  *string `json:"database_id,omitempty"`
+	Namespace   *string `json:"namespace,omitempty"`
+	ExternalDns *string `json:"external_dns,omitempty"`
+	TlsMode     *string `json:"tls_mode,omitempty"`
+	ServiceType *string `json:"service_type,omitempty"`
+	Status      *string `json:"status,omitempty"`
+	Phase       *string `json:"phase,omitempty"`
+}

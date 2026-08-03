@@ -1,0 +1,2189 @@
+openapi: 3.0.3
+info:
+  description: HyperShell fleet management API
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  title: HyperShell API
+  version: 1.0.0
+servers:
+- description: localhost
+  url: http://localhost:8000
+- description: current domain
+  url: /
+security:
+- Bearer: []
+tags:
+- description: Default API operations
+  name: default
+paths:
+  /api/hypershell/v1/metadata:
+    get:
+      operationId: getMetadata
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectReference"
+          description: Service metadata
+      summary: Service metadata
+  /api/hypershell/v1/fleets:
+    get:
+      parameters:
+      - description: Page number of record list when record list exceeds specified
+          page size
+        explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      - description: Maximum number of records to return
+        explode: true
+        in: query
+        name: size
+        required: false
+        schema:
+          default: 100
+          minimum: 0
+          type: integer
+        style: form
+      - description: Specifies the search criteria
+        explode: true
+        in: query
+        name: search
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Specifies the order by criteria
+        explode: true
+        in: query
+        name: orderBy
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Supplies a comma-separated list of fields to be returned
+        explode: true
+        in: query
+        name: fields
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FleetList"
+          description: A JSON array of fleet objects
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error occurred
+      security:
+      - Bearer: []
+      summary: Returns a list of fleets
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fleet"
+        description: Fleet data
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fleet"
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Validation errors occurred
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Fleet already exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: An unexpected error occurred creating the fleet
+      security:
+      - Bearer: []
+      summary: Create a new fleet
+  /api/hypershell/v1/fleets/{id}:
+    get:
+      parameters:
+      - description: The id of record
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fleet"
+          description: Fleet found by id
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: No fleet with specified id exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error occurred
+      security:
+      - Bearer: []
+      summary: Get an fleet by id
+    patch:
+      parameters:
+      - description: The id of record
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FleetPatchRequest"
+        description: Updated fleet data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fleet"
+          description: Fleet updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Validation errors occurred
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: No fleet with specified id exists
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Fleet already exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error updating fleet
+      security:
+      - Bearer: []
+      summary: Update an fleet
+  /api/hypershell/v1/managed_clusters:
+    get:
+      parameters:
+      - description: Page number of record list when record list exceeds specified
+          page size
+        explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      - description: Maximum number of records to return
+        explode: true
+        in: query
+        name: size
+        required: false
+        schema:
+          default: 100
+          minimum: 0
+          type: integer
+        style: form
+      - description: Specifies the search criteria
+        explode: true
+        in: query
+        name: search
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Specifies the order by criteria
+        explode: true
+        in: query
+        name: orderBy
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Supplies a comma-separated list of fields to be returned
+        explode: true
+        in: query
+        name: fields
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedClusterList"
+          description: A JSON array of managedCluster objects
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error occurred
+      security:
+      - Bearer: []
+      summary: Returns a list of managedClusters
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManagedCluster"
+        description: ManagedCluster data
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedCluster"
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Validation errors occurred
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: ManagedCluster already exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: An unexpected error occurred creating the managedCluster
+      security:
+      - Bearer: []
+      summary: Create a new managedCluster
+  /api/hypershell/v1/managed_clusters/{id}:
+    get:
+      parameters:
+      - description: The id of record
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedCluster"
+          description: ManagedCluster found by id
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: No managedCluster with specified id exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error occurred
+      security:
+      - Bearer: []
+      summary: Get an managedCluster by id
+    patch:
+      parameters:
+      - description: The id of record
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManagedClusterPatchRequest"
+        description: Updated managedCluster data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedCluster"
+          description: ManagedCluster updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Validation errors occurred
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: No managedCluster with specified id exists
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: ManagedCluster already exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error updating managedCluster
+      security:
+      - Bearer: []
+      summary: Update an managedCluster
+  /api/hypershell/v1/managed_databases:
+    get:
+      parameters:
+      - description: Page number of record list when record list exceeds specified
+          page size
+        explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      - description: Maximum number of records to return
+        explode: true
+        in: query
+        name: size
+        required: false
+        schema:
+          default: 100
+          minimum: 0
+          type: integer
+        style: form
+      - description: Specifies the search criteria
+        explode: true
+        in: query
+        name: search
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Specifies the order by criteria
+        explode: true
+        in: query
+        name: orderBy
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Supplies a comma-separated list of fields to be returned
+        explode: true
+        in: query
+        name: fields
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedDatabaseList"
+          description: A JSON array of managedDatabase objects
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error occurred
+      security:
+      - Bearer: []
+      summary: Returns a list of managedDatabases
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManagedDatabase"
+        description: ManagedDatabase data
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedDatabase"
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Validation errors occurred
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: ManagedDatabase already exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: An unexpected error occurred creating the managedDatabase
+      security:
+      - Bearer: []
+      summary: Create a new managedDatabase
+  /api/hypershell/v1/managed_databases/{id}:
+    get:
+      parameters:
+      - description: The id of record
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedDatabase"
+          description: ManagedDatabase found by id
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: No managedDatabase with specified id exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error occurred
+      security:
+      - Bearer: []
+      summary: Get an managedDatabase by id
+    patch:
+      parameters:
+      - description: The id of record
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManagedDatabasePatchRequest"
+        description: Updated managedDatabase data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedDatabase"
+          description: ManagedDatabase updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Validation errors occurred
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: No managedDatabase with specified id exists
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: ManagedDatabase already exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error updating managedDatabase
+      security:
+      - Bearer: []
+      summary: Update an managedDatabase
+  /api/hypershell/v1/gateway_releases:
+    get:
+      parameters:
+      - description: Page number of record list when record list exceeds specified
+          page size
+        explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      - description: Maximum number of records to return
+        explode: true
+        in: query
+        name: size
+        required: false
+        schema:
+          default: 100
+          minimum: 0
+          type: integer
+        style: form
+      - description: Specifies the search criteria
+        explode: true
+        in: query
+        name: search
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Specifies the order by criteria
+        explode: true
+        in: query
+        name: orderBy
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Supplies a comma-separated list of fields to be returned
+        explode: true
+        in: query
+        name: fields
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GatewayReleaseList"
+          description: A JSON array of gatewayRelease objects
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error occurred
+      security:
+      - Bearer: []
+      summary: Returns a list of gatewayReleases
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GatewayRelease"
+        description: GatewayRelease data
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GatewayRelease"
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Validation errors occurred
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: GatewayRelease already exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: An unexpected error occurred creating the gatewayRelease
+      security:
+      - Bearer: []
+      summary: Create a new gatewayRelease
+  /api/hypershell/v1/gateway_releases/{id}:
+    get:
+      parameters:
+      - description: The id of record
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GatewayRelease"
+          description: GatewayRelease found by id
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: No gatewayRelease with specified id exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error occurred
+      security:
+      - Bearer: []
+      summary: Get an gatewayRelease by id
+    patch:
+      parameters:
+      - description: The id of record
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GatewayReleasePatchRequest"
+        description: Updated gatewayRelease data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GatewayRelease"
+          description: GatewayRelease updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Validation errors occurred
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: No gatewayRelease with specified id exists
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: GatewayRelease already exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error updating gatewayRelease
+      security:
+      - Bearer: []
+      summary: Update an gatewayRelease
+  /api/hypershell/v1/gateways:
+    get:
+      parameters:
+      - description: Page number of record list when record list exceeds specified
+          page size
+        explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      - description: Maximum number of records to return
+        explode: true
+        in: query
+        name: size
+        required: false
+        schema:
+          default: 100
+          minimum: 0
+          type: integer
+        style: form
+      - description: Specifies the search criteria
+        explode: true
+        in: query
+        name: search
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Specifies the order by criteria
+        explode: true
+        in: query
+        name: orderBy
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Supplies a comma-separated list of fields to be returned
+        explode: true
+        in: query
+        name: fields
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GatewayList"
+          description: A JSON array of gateway objects
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error occurred
+      security:
+      - Bearer: []
+      summary: Returns a list of gateways
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Gateway"
+        description: Gateway data
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Gateway"
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Validation errors occurred
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Gateway already exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: An unexpected error occurred creating the gateway
+      security:
+      - Bearer: []
+      summary: Create a new gateway
+  /api/hypershell/v1/gateways/{id}:
+    get:
+      parameters:
+      - description: The id of record
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Gateway"
+          description: Gateway found by id
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: No gateway with specified id exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error occurred
+      security:
+      - Bearer: []
+      summary: Get an gateway by id
+    patch:
+      parameters:
+      - description: The id of record
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GatewayPatchRequest"
+        description: Updated gateway data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Gateway"
+          description: Gateway updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Validation errors occurred
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: No gateway with specified id exists
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Gateway already exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error updating gateway
+      security:
+      - Bearer: []
+      summary: Update an gateway
+  /api/hypershell/v1/gateway_networks:
+    get:
+      parameters:
+      - description: Page number of record list when record list exceeds specified
+          page size
+        explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      - description: Maximum number of records to return
+        explode: true
+        in: query
+        name: size
+        required: false
+        schema:
+          default: 100
+          minimum: 0
+          type: integer
+        style: form
+      - description: Specifies the search criteria
+        explode: true
+        in: query
+        name: search
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Specifies the order by criteria
+        explode: true
+        in: query
+        name: orderBy
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Supplies a comma-separated list of fields to be returned
+        explode: true
+        in: query
+        name: fields
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GatewayNetworkList"
+          description: A JSON array of gatewayNetwork objects
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error occurred
+      security:
+      - Bearer: []
+      summary: Returns a list of gatewayNetworks
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GatewayNetwork"
+        description: GatewayNetwork data
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GatewayNetwork"
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Validation errors occurred
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: GatewayNetwork already exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: An unexpected error occurred creating the gatewayNetwork
+      security:
+      - Bearer: []
+      summary: Create a new gatewayNetwork
+  /api/hypershell/v1/gateway_networks/{id}:
+    get:
+      parameters:
+      - description: The id of record
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GatewayNetwork"
+          description: GatewayNetwork found by id
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: No gatewayNetwork with specified id exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error occurred
+      security:
+      - Bearer: []
+      summary: Get an gatewayNetwork by id
+    patch:
+      parameters:
+      - description: The id of record
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GatewayNetworkPatchRequest"
+        description: Updated gatewayNetwork data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GatewayNetwork"
+          description: GatewayNetwork updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Validation errors occurred
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Auth token is invalid
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unauthorized to perform operation
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: No gatewayNetwork with specified id exists
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: GatewayNetwork already exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Unexpected error updating gatewayNetwork
+      security:
+      - Bearer: []
+      summary: Update an gatewayNetwork
+components:
+  parameters:
+    id:
+      description: The id of record
+      explode: false
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+      style: simple
+    page:
+      description: Page number of record list when record list exceeds specified page
+        size
+      explode: true
+      in: query
+      name: page
+      required: false
+      schema:
+        default: 1
+        minimum: 1
+        type: integer
+      style: form
+    size:
+      description: Maximum number of records to return
+      explode: true
+      in: query
+      name: size
+      required: false
+      schema:
+        default: 100
+        minimum: 0
+        type: integer
+      style: form
+    search:
+      description: Specifies the search criteria
+      explode: true
+      in: query
+      name: search
+      required: false
+      schema:
+        type: string
+      style: form
+    orderBy:
+      description: Specifies the order by criteria
+      explode: true
+      in: query
+      name: orderBy
+      required: false
+      schema:
+        type: string
+      style: form
+    fields:
+      description: Supplies a comma-separated list of fields to be returned
+      explode: true
+      in: query
+      name: fields
+      required: false
+      schema:
+        type: string
+      style: form
+  responses:
+    UnauthorizedError:
+      description: Access token is missing or invalid
+    ForbiddenError:
+      description: Access token does not have sufficient privileges
+    InternalServerError:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Unexpected error occurred
+  schemas:
+    List:
+      allOf:
+      - properties:
+          kind:
+            type: string
+          page:
+            type: integer
+          size:
+            type: integer
+          total:
+            type: integer
+        type: object
+      - $ref: "#/components/schemas/ObjectReference"
+    ObjectReference:
+      example:
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        kind: kind
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: id
+        href: href
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+        href:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+      type: object
+    Error:
+      allOf:
+      - $ref: "#/components/schemas/ObjectReference"
+      - properties:
+          code:
+            type: string
+          reason:
+            type: string
+          operation_id:
+            type: string
+        type: object
+      example:
+        reason: reason
+        code: code
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        kind: kind
+        created_at: 2000-01-23T04:56:07.000+00:00
+        operation_id: operation_id
+        id: id
+        href: href
+    Fleet:
+      allOf:
+      - $ref: "#/components/schemas/ObjectReference"
+      - properties:
+          name:
+            type: string
+          description:
+            type: string
+          status:
+            type: string
+        required:
+        - name
+        type: object
+      example:
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        kind: kind
+        name: name
+        created_at: 2000-01-23T04:56:07.000+00:00
+        description: description
+        id: id
+        href: href
+        status: status
+    FleetList:
+      allOf:
+      - $ref: "#/components/schemas/List"
+      - properties:
+          items:
+            items:
+              $ref: "#/components/schemas/Fleet"
+            type: array
+        type: object
+      example:
+        total: 1
+        size: 6
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        kind: kind
+        created_at: 2000-01-23T04:56:07.000+00:00
+        page: 0
+        id: id
+        href: href
+        items:
+        - updated_at: 2000-01-23T04:56:07.000+00:00
+          kind: kind
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          description: description
+          id: id
+          href: href
+          status: status
+        - updated_at: 2000-01-23T04:56:07.000+00:00
+          kind: kind
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          description: description
+          id: id
+          href: href
+          status: status
+    FleetPatchRequest:
+      example:
+        name: name
+        description: description
+        status: status
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+      type: object
+    ManagedCluster:
+      allOf:
+      - $ref: "#/components/schemas/ObjectReference"
+      - properties:
+          name:
+            type: string
+          fleet_id:
+            type: string
+          provider:
+            type: string
+          region:
+            type: string
+          kubeconfig_secret:
+            type: string
+          status:
+            type: string
+          api_server_url:
+            type: string
+        required:
+        - fleet_id
+        - kubeconfig_secret
+        - name
+        - provider
+        type: object
+      example:
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        provider: provider
+        kind: kind
+        name: name
+        created_at: 2000-01-23T04:56:07.000+00:00
+        kubeconfig_secret: kubeconfig_secret
+        id: id
+        href: href
+        fleet_id: fleet_id
+        region: region
+        status: status
+        api_server_url: api_server_url
+    ManagedClusterList:
+      allOf:
+      - $ref: "#/components/schemas/List"
+      - properties:
+          items:
+            items:
+              $ref: "#/components/schemas/ManagedCluster"
+            type: array
+        type: object
+      example:
+        total: 1
+        size: 6
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        kind: kind
+        created_at: 2000-01-23T04:56:07.000+00:00
+        page: 0
+        id: id
+        href: href
+        items:
+        - updated_at: 2000-01-23T04:56:07.000+00:00
+          provider: provider
+          kind: kind
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          kubeconfig_secret: kubeconfig_secret
+          id: id
+          href: href
+          fleet_id: fleet_id
+          region: region
+          status: status
+          api_server_url: api_server_url
+        - updated_at: 2000-01-23T04:56:07.000+00:00
+          provider: provider
+          kind: kind
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          kubeconfig_secret: kubeconfig_secret
+          id: id
+          href: href
+          fleet_id: fleet_id
+          region: region
+          status: status
+          api_server_url: api_server_url
+    ManagedClusterPatchRequest:
+      example:
+        provider: provider
+        name: name
+        kubeconfig_secret: kubeconfig_secret
+        fleet_id: fleet_id
+        region: region
+        status: status
+        api_server_url: api_server_url
+      properties:
+        name:
+          type: string
+        fleet_id:
+          type: string
+        provider:
+          type: string
+        region:
+          type: string
+        kubeconfig_secret:
+          type: string
+        status:
+          type: string
+        api_server_url:
+          type: string
+      type: object
+    ManagedDatabase:
+      allOf:
+      - $ref: "#/components/schemas/ObjectReference"
+      - properties:
+          name:
+            type: string
+          fleet_id:
+            type: string
+          provider:
+            type: string
+          region:
+            type: string
+          engine:
+            type: string
+          engine_version:
+            type: string
+          instance_class:
+            type: string
+          connection_secret:
+            type: string
+          status:
+            type: string
+        required:
+        - fleet_id
+        - name
+        - provider
+        type: object
+      example:
+        kind: kind
+        created_at: 2000-01-23T04:56:07.000+00:00
+        connection_secret: connection_secret
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        instance_class: instance_class
+        provider: provider
+        engine: engine
+        name: name
+        id: id
+        href: href
+        fleet_id: fleet_id
+        region: region
+        engine_version: engine_version
+        status: status
+    ManagedDatabaseList:
+      allOf:
+      - $ref: "#/components/schemas/List"
+      - properties:
+          items:
+            items:
+              $ref: "#/components/schemas/ManagedDatabase"
+            type: array
+        type: object
+      example:
+        total: 1
+        size: 6
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        kind: kind
+        created_at: 2000-01-23T04:56:07.000+00:00
+        page: 0
+        id: id
+        href: href
+        items:
+        - kind: kind
+          created_at: 2000-01-23T04:56:07.000+00:00
+          connection_secret: connection_secret
+          updated_at: 2000-01-23T04:56:07.000+00:00
+          instance_class: instance_class
+          provider: provider
+          engine: engine
+          name: name
+          id: id
+          href: href
+          fleet_id: fleet_id
+          region: region
+          engine_version: engine_version
+          status: status
+        - kind: kind
+          created_at: 2000-01-23T04:56:07.000+00:00
+          connection_secret: connection_secret
+          updated_at: 2000-01-23T04:56:07.000+00:00
+          instance_class: instance_class
+          provider: provider
+          engine: engine
+          name: name
+          id: id
+          href: href
+          fleet_id: fleet_id
+          region: region
+          engine_version: engine_version
+          status: status
+    ManagedDatabasePatchRequest:
+      example:
+        connection_secret: connection_secret
+        instance_class: instance_class
+        provider: provider
+        engine: engine
+        name: name
+        fleet_id: fleet_id
+        region: region
+        engine_version: engine_version
+        status: status
+      properties:
+        name:
+          type: string
+        fleet_id:
+          type: string
+        provider:
+          type: string
+        region:
+          type: string
+        engine:
+          type: string
+        engine_version:
+          type: string
+        instance_class:
+          type: string
+        connection_secret:
+          type: string
+        status:
+          type: string
+      type: object
+    GatewayRelease:
+      allOf:
+      - $ref: "#/components/schemas/ObjectReference"
+      - properties:
+          name:
+            type: string
+          fleet_id:
+            type: string
+          image:
+            type: string
+          rollout_strategy:
+            type: string
+          canary_percent:
+            format: int32
+            type: integer
+          canary_duration:
+            type: string
+          status:
+            type: string
+        required:
+        - fleet_id
+        - image
+        - name
+        type: object
+      example:
+        image: image
+        canary_percent: 5
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        kind: kind
+        name: name
+        created_at: 2000-01-23T04:56:07.000+00:00
+        rollout_strategy: rollout_strategy
+        id: id
+        href: href
+        fleet_id: fleet_id
+        canary_duration: canary_duration
+        status: status
+    GatewayReleaseList:
+      allOf:
+      - $ref: "#/components/schemas/List"
+      - properties:
+          items:
+            items:
+              $ref: "#/components/schemas/GatewayRelease"
+            type: array
+        type: object
+      example:
+        total: 1
+        size: 6
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        kind: kind
+        created_at: 2000-01-23T04:56:07.000+00:00
+        page: 0
+        id: id
+        href: href
+        items:
+        - image: image
+          canary_percent: 5
+          updated_at: 2000-01-23T04:56:07.000+00:00
+          kind: kind
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          rollout_strategy: rollout_strategy
+          id: id
+          href: href
+          fleet_id: fleet_id
+          canary_duration: canary_duration
+          status: status
+        - image: image
+          canary_percent: 5
+          updated_at: 2000-01-23T04:56:07.000+00:00
+          kind: kind
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          rollout_strategy: rollout_strategy
+          id: id
+          href: href
+          fleet_id: fleet_id
+          canary_duration: canary_duration
+          status: status
+    GatewayReleasePatchRequest:
+      example:
+        image: image
+        canary_percent: 0
+        name: name
+        rollout_strategy: rollout_strategy
+        fleet_id: fleet_id
+        canary_duration: canary_duration
+        status: status
+      properties:
+        name:
+          type: string
+        fleet_id:
+          type: string
+        image:
+          type: string
+        rollout_strategy:
+          type: string
+        canary_percent:
+          format: int32
+          type: integer
+        canary_duration:
+          type: string
+        status:
+          type: string
+      type: object
+    Gateway:
+      allOf:
+      - $ref: "#/components/schemas/ObjectReference"
+      - properties:
+          name:
+            type: string
+          fleet_id:
+            type: string
+          cluster_id:
+            type: string
+          release_id:
+            type: string
+          database_id:
+            type: string
+          namespace:
+            type: string
+          external_dns:
+            type: string
+          tls_mode:
+            type: string
+          service_type:
+            type: string
+          status:
+            type: string
+          phase:
+            type: string
+        required:
+        - cluster_id
+        - database_id
+        - fleet_id
+        - name
+        - namespace
+        - release_id
+        type: object
+      example:
+        phase: phase
+        release_id: release_id
+        kind: kind
+        created_at: 2000-01-23T04:56:07.000+00:00
+        cluster_id: cluster_id
+        service_type: service_type
+        tls_mode: tls_mode
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        database_id: database_id
+        name: name
+        namespace: namespace
+        id: id
+        href: href
+        fleet_id: fleet_id
+        external_dns: external_dns
+        status: status
+    GatewayList:
+      allOf:
+      - $ref: "#/components/schemas/List"
+      - properties:
+          items:
+            items:
+              $ref: "#/components/schemas/Gateway"
+            type: array
+        type: object
+      example:
+        total: 1
+        size: 6
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        kind: kind
+        created_at: 2000-01-23T04:56:07.000+00:00
+        page: 0
+        id: id
+        href: href
+        items:
+        - phase: phase
+          release_id: release_id
+          kind: kind
+          created_at: 2000-01-23T04:56:07.000+00:00
+          cluster_id: cluster_id
+          service_type: service_type
+          tls_mode: tls_mode
+          updated_at: 2000-01-23T04:56:07.000+00:00
+          database_id: database_id
+          name: name
+          namespace: namespace
+          id: id
+          href: href
+          fleet_id: fleet_id
+          external_dns: external_dns
+          status: status
+        - phase: phase
+          release_id: release_id
+          kind: kind
+          created_at: 2000-01-23T04:56:07.000+00:00
+          cluster_id: cluster_id
+          service_type: service_type
+          tls_mode: tls_mode
+          updated_at: 2000-01-23T04:56:07.000+00:00
+          database_id: database_id
+          name: name
+          namespace: namespace
+          id: id
+          href: href
+          fleet_id: fleet_id
+          external_dns: external_dns
+          status: status
+    GatewayPatchRequest:
+      example:
+        phase: phase
+        release_id: release_id
+        cluster_id: cluster_id
+        service_type: service_type
+        tls_mode: tls_mode
+        database_id: database_id
+        name: name
+        namespace: namespace
+        fleet_id: fleet_id
+        external_dns: external_dns
+        status: status
+      properties:
+        name:
+          type: string
+        fleet_id:
+          type: string
+        cluster_id:
+          type: string
+        release_id:
+          type: string
+        database_id:
+          type: string
+        namespace:
+          type: string
+        external_dns:
+          type: string
+        tls_mode:
+          type: string
+        service_type:
+          type: string
+        status:
+          type: string
+        phase:
+          type: string
+      type: object
+    GatewayNetwork:
+      allOf:
+      - $ref: "#/components/schemas/ObjectReference"
+      - properties:
+          name:
+            type: string
+          fleet_id:
+            type: string
+          topology:
+            type: string
+          tunnel_mode:
+            type: string
+          hub_gateway_id:
+            type: string
+          status:
+            type: string
+        required:
+        - fleet_id
+        - name
+        type: object
+      example:
+        tunnel_mode: tunnel_mode
+        hub_gateway_id: hub_gateway_id
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        kind: kind
+        topology: topology
+        name: name
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: id
+        href: href
+        fleet_id: fleet_id
+        status: status
+    GatewayNetworkList:
+      allOf:
+      - $ref: "#/components/schemas/List"
+      - properties:
+          items:
+            items:
+              $ref: "#/components/schemas/GatewayNetwork"
+            type: array
+        type: object
+      example:
+        total: 1
+        size: 6
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        kind: kind
+        created_at: 2000-01-23T04:56:07.000+00:00
+        page: 0
+        id: id
+        href: href
+        items:
+        - tunnel_mode: tunnel_mode
+          hub_gateway_id: hub_gateway_id
+          updated_at: 2000-01-23T04:56:07.000+00:00
+          kind: kind
+          topology: topology
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: id
+          href: href
+          fleet_id: fleet_id
+          status: status
+        - tunnel_mode: tunnel_mode
+          hub_gateway_id: hub_gateway_id
+          updated_at: 2000-01-23T04:56:07.000+00:00
+          kind: kind
+          topology: topology
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: id
+          href: href
+          fleet_id: fleet_id
+          status: status
+    GatewayNetworkPatchRequest:
+      example:
+        tunnel_mode: tunnel_mode
+        hub_gateway_id: hub_gateway_id
+        topology: topology
+        name: name
+        fleet_id: fleet_id
+        status: status
+      properties:
+        name:
+          type: string
+        fleet_id:
+          type: string
+        topology:
+          type: string
+        tunnel_mode:
+          type: string
+        hub_gateway_id:
+          type: string
+        status:
+          type: string
+      type: object
+  securitySchemes:
+    Bearer:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
