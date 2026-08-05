@@ -30,6 +30,7 @@ Machine-readable index for autonomous reconciliation (`/reconcile` skill).
 | `standards/platform/cross-cutting.spec.md` | standards | - | ALL | - |
 | `standards/control-plane/conventions.spec.md` | standards | - | CP | - |
 | `standards/security/security.spec.md` | standards | - | ALL | - |
+| `platform/local-development.spec.md` | platform | Kind cluster, images, Make targets | ALL | cross-cutting, security |
 | `standards/ui/foundations.spec.md` | standards | UI foundations | WEB | - |
 | `standards/ui/brand-color.spec.md` | standards | Red Hat brand color | WEB | foundations, accessibility |
 | `standards/ui/interaction.spec.md` | standards | UI interaction | WEB | foundations |
