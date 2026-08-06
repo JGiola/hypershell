@@ -2,10 +2,16 @@
 !package.json
 !pnpm-lock.yaml
 !pnpm-workspace.yaml
+!images/
+images/**
+!images/brand/
+!images/brand/logo.png
 !components/
 components/**
 !components/sdk-typescript/
 !components/sdk-typescript/**
+!components/gateway-ui/
+!components/gateway-ui/**
 !components/web-console/
 !components/web-console/**
 **/node_modules
