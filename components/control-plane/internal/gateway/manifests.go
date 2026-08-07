@@ -96,6 +96,18 @@ func ApplyManifestToNamespace(manifest *unstructured.Unstructured, namespace str
 	if config.Image != "" {
 		image = config.Image
 	}
+	dbImage := config.Database.Image
+	if dbImage == "" {
+		dbImage = "postgres:16"
+	}
+	dbStorage := config.Database.StorageSize
+	if dbStorage == "" {
+		dbStorage = "5Gi"
+	}
+	// Replace DB_IMAGE_PLACEHOLDER before IMAGE_PLACEHOLDER because
+	// the shorter string is a substring of the longer one.
+	manifestJSON = strings.ReplaceAll(manifestJSON, "DB_IMAGE_PLACEHOLDER", dbImage)
+	manifestJSON = strings.ReplaceAll(manifestJSON, "DB_STORAGE_PLACEHOLDER", dbStorage)
 	manifestJSON = strings.ReplaceAll(manifestJSON, "IMAGE_PLACEHOLDER", image)
 
 	result := &unstructured.Unstructured{}
@@ -109,7 +121,7 @@ func ApplyManifestToNamespace(manifest *unstructured.Unstructured, namespace str
 func ApplyDatabaseOverrides(obj *unstructured.Unstructured, dbConfig DatabaseConfig) error {
 	jsonBytes, err := obj.MarshalJSON()
 	if err != nil {
-		return nil
+		return fmt.Errorf("marshal for database overrides: %w", err)
 	}
 	manifestJSON := string(jsonBytes)
 
@@ -119,7 +131,7 @@ func ApplyDatabaseOverrides(obj *unstructured.Unstructured, dbConfig DatabaseCon
 	}
 	dbImage := dbConfig.Image
 	if dbImage == "" {
-		dbImage = "registry.redhat.io/rhel9/postgresql-16:latest"
+		dbImage = "postgres:16"
 	}
 
 	if strings.Contains(manifestJSON, "DB_STORAGE_PLACEHOLDER") || strings.Contains(manifestJSON, "DB_IMAGE_PLACEHOLDER") {
