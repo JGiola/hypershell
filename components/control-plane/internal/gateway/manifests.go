@@ -98,7 +98,7 @@ func ApplyManifestToNamespace(manifest *unstructured.Unstructured, namespace str
 	}
 	dbImage := config.Database.Image
 	if dbImage == "" {
-		dbImage = "postgres:16"
+		dbImage = "postgres:18@sha256:a02db8cac496f15b094798a38254f14d6e00741f709360e5e00bb6668ea31636"
 	}
 	dbStorage := config.Database.StorageSize
 	if dbStorage == "" {
@@ -138,7 +138,7 @@ func ApplyDatabaseOverrides(obj *unstructured.Unstructured, dbConfig DatabaseCon
 	}
 	dbImage := dbConfig.Image
 	if dbImage == "" {
-		dbImage = "postgres:16"
+		dbImage = "postgres:18@sha256:a02db8cac496f15b094798a38254f14d6e00741f709360e5e00bb6668ea31636"
 	}
 
 	userKey, passKey, dbKey := postgresEnvKeys(dbImage)
@@ -234,9 +234,11 @@ func ApplyConfigOverrides(obj *unstructured.Unstructured, config GatewayConfig) 
 				audience = "openshell-cli"
 			}
 			oidcSection += fmt.Sprintf("    audience    = \"%s\"\n", audience)
-			if config.OIDC.JwksTTL > 0 {
-				oidcSection += fmt.Sprintf("    jwks_ttl    = %d\n", config.OIDC.JwksTTL)
+			jwksTTL := config.OIDC.JwksTTL
+			if jwksTTL == 0 {
+				jwksTTL = 3600
 			}
+			oidcSection += fmt.Sprintf("    jwks_ttl    = %d\n", jwksTTL)
 			if config.OIDC.RolesClaim != "" {
 				oidcSection += fmt.Sprintf("    roles_claim = \"%s\"\n", config.OIDC.RolesClaim)
 			}
