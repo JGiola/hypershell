@@ -45,7 +45,7 @@ skills/
 
 ## Reconciliation State
 
-**Last analyzed**: 2026-08-11
+**Last analyzed**: 2026-08-12
 **Spec corpus**: 23 specs across 4 domains (platform, web-console, standards/platform, standards/ui)
 **Codebase commit**: working tree
 
@@ -62,9 +62,10 @@ skills/
 | Platform - Gateway Routing | 1 | 18 | 6 | 4 | 8 | 0 | 44% |
 | Platform - Local Development | 1 | 25 | 23 | 0 | 1 | 1 | 96% |
 | Platform - E2E Testing | 1 | 8 | 8 | 0 | 0 | 0 | 100% |
-| Web Console - Architecture | 1 | 28 | 18 | 8 | 2 | 0 | 79% |
+| Platform - OIDC Integration | 1 | 6 | 5 | 1 | 0 | 0 | 92% |
+| Web Console - Architecture | 1 | 28 | 21 | 5 | 2 | 0 | 86% |
 | Standards | 13 | 0 | 0 | 0 | 0 | 0 | N/A |
-| **TOTAL** | **23** | **145** | **98** | **20** | **27** | **1** | **75%** |
+| **TOTAL** | **24** | **151** | **106** | **18** | **26** | **1** | **77%** |
 
 ### Spec Dependency Order
 
@@ -217,9 +218,9 @@ Layer 7:          web-console/architecture (depends on data-model, security, UI 
 | WEB-PKG-04 | Reusable gateway management UI package | Present | - | `packages/gateway-management-ui/` | - |
 | WEB-SDK-01 | Browser-compatible SDK | Present | - | `components/sdk-typescript/` | - |
 | WEB-AUTH-00 | No-auth dev mode | Present | - | `vite.config.ts` | - |
-| WEB-AUTH-01 | OIDC BFF | Partial | `openid-client` declared; endpoints not implemented | `bff/src/app.ts` | Future |
-| WEB-AUTH-02 | Session + CSRF protection | Missing | No session management | - | Future |
-| WEB-AUTH-03 | Browser session contract | Missing | No session resource endpoint | - | Future |
+| WEB-AUTH-01 | OIDC BFF | Present | Auth code flow with PKCE via openid-client v6; /auth/login, /auth/callback, /auth/logout, /auth/session endpoints; proxy injects Bearer token | `bff/src/auth.ts`, `bff/src/app.ts` | OIDC ✅ |
+| WEB-AUTH-02 | Session + CSRF protection | Present | @fastify/secure-session encrypted cookies; Origin header CSRF validation on mutating requests; session rotation on login | `bff/src/auth.ts`, `bff/src/app.ts` | OIDC ✅ |
+| WEB-AUTH-03 | Browser session contract | Present | GET /auth/session returns display identity, roles, expiry; no tokens exposed | `bff/src/auth.ts` | OIDC ✅ |
 | WEB-BFF-01 | Same-origin static + API BFF | Present | - | `bff/src/app.ts` | - |
 | WEB-DATA-01 | Server-state ownership (TanStack Query) | Present | - | `root.tsx`, `gateway-data.ts` | - |
 | WEB-DATA-02 | URL and local state | Partial | Routes encode ID; pagination/search TBD | `routes.ts` | - |
@@ -253,6 +254,17 @@ Layer 7:          web-console/architecture (depends on data-model, security, UI 
 | E2E-6 | CI Artifact Collection | Present | Pod logs, events, describes uploaded on failure only | `.github/workflows/e2e.yml` | E2E-W3 ✅ |
 | E2E-7 | Deploy Base/Overlay Structure | Present | deploy/base/ + deploy/kind/ overlay + deploy/openshift/ stub | `deploy/base/`, `deploy/kind/kustomization.yaml` | E2E-W1 ✅ |
 | E2E-8 | Backward Compatibility | Present | make kind-up unchanged; IMAGE_TAG now overrides initial deploy images | `scripts/kind/up.sh` | E2E-W1 ✅ |
+
+### oidc-integration.spec.md
+
+| # | Requirement | Status | Gap | Code Location | Wave |
+|---|-------------|--------|-----|---------------|------|
+| OI-1 | API Server JWT Validation (`development_oidc` env) | Present | New environment with JWT enabled, JWKS config, gRPC bypass methods | `environments/e_development_oidc.go`, `environments.go` | OIDC ✅ |
+| OI-2 | BFF OIDC Authorization Code Flow | Present | Auth code + PKCE, encrypted cookies, token refresh, RP-initiated logout | `bff/src/auth.ts`, `bff/src/app.ts` | OIDC ✅ |
+| OI-3 | BFF Session Security | Present | @fastify/secure-session, CSRF Origin validation, session rotation | `bff/src/auth.ts`, `bff/src/app.ts` | OIDC ✅ |
+| OI-4 | BFF Browser Session Contract | Present | GET /auth/session with identity, roles, expiry; no tokens | `bff/src/auth.ts` | OIDC ✅ |
+| OI-5 | Opt-In Kind OIDC | Present | KIND_ENABLE_OIDC wired through Makefile/lib.sh/up.sh/status.sh | `scripts/kind/`, `Makefile` | OIDC ✅ |
+| OI-6 | Identity Provider Client Security | Partial | redirectUris restricted but port wildcard pattern not supported by Keycloak; needs explicit port URIs | `keycloak.yaml` | Follow-up |
 
 ### e2e-openshell.sh (Test Alignment)
 
@@ -377,7 +389,7 @@ Created `.github/workflows/e2e.yml` with PR/push/merge_group triggers, concurren
 | CP-4 | Status synchronization / health checks | CP | Needs periodic reconcile loop |
 | CP-5 | Multi-cluster client pool | CP | Architecture: per-cluster kubeconfig |
 | LD-* | Local development (most items) | Local Dev | Spec recently authored; MVP first |
-| WEB-AUTH-* | OIDC BFF + session + CSRF | Web Console | After no-auth dev mode |
+| WEB-AUTH-* | OIDC BFF + session + CSRF | Web Console | Implemented in OIDC wave; 3 minor follow-ups remain |
 
 ### Cross-Cutting Findings
 
@@ -407,3 +419,5 @@ Created `.github/workflows/e2e.yml` with PR/push/merge_group triggers, concurren
 | 2026-08-11 | working tree | Local-dev spec reconciliation | 73% | KIND_DB_IMAGE env var wired through Makefile/lib.sh/controller.yaml; spec updated: Gateway creation is user-initiated (not automatic in kind-up); DEVELOPMENT.md env var table updated; gap table refreshed - 23/25 requirements present (was 3/24); only multi-namespace deployments remain |
 | 2026-08-11 | 049d1a8 | Gap analysis for e2e-testing.spec.md | 58% | New spec: 8 requirements (0 present, 1 partial, 7 missing); 3 waves planned (deploy restructuring, test framework, CI workflow) |
 | 2026-08-11 | working tree | Executed E2E waves W1-W3 | 75% | Deploy base/overlay restructuring, e2e test framework with Kind driver, CI e2e workflow; all 8 requirements now present |
+| 2026-08-11 | 458c359 | OIDC integration spec authored | 75% | Platform OIDC integration spec covering API JWT, BFF OIDC, IdP config, Kind opt-in |
+| 2026-08-12 | ed3725a | OIDC reconciliation complete | 77% | API server development_oidc env; BFF auth code flow with PKCE (22 tests); CP client_credentials TokenProvider + gRPC PerRPCCredentials; KIND_ENABLE_OIDC opt-in; Keycloak hypershell-control-plane client; verified end-to-end on Kind (8/8 checks pass) |

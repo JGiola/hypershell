@@ -120,8 +120,8 @@ data:
           "standardFlowEnabled": true,
           "directAccessGrantsEnabled": true,
           "fullScopeAllowed": true,
-          "redirectUris": ["*"],
-          "webOrigins": ["*"],
+          "redirectUris": ["https://console.hypershell.localhost/*", "https://console.hypershell.localhost:*"],
+          "webOrigins": ["+"],
           "defaultClientScopes": ["openid", "email", "profile"],
           "protocolMappers": [
             {
@@ -171,6 +171,29 @@ data:
           "standardFlowEnabled": false,
           "directAccessGrantsEnabled": false,
           "secret": "provisioner-secret"
+        },
+        {
+          "clientId": "hypershell-control-plane",
+          "enabled": true,
+          "publicClient": false,
+          "serviceAccountsEnabled": true,
+          "standardFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "secret": "control-plane-secret",
+          "protocolMappers": [
+            {
+              "name": "audience",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": "hypershell-frontend",
+                "id.token.claim": "false",
+                "access.token.claim": "true",
+                "introspection.token.claim": "true"
+              }
+            }
+          ]
         }
       ],
       "roles": {
@@ -182,21 +205,21 @@ data:
       "users": [
         {
           "username": "admin",
-          "enabled": true,
-          "email": "admin@hypershell.local",
-          "emailVerified": true,
           "firstName": "Admin",
           "lastName": "User",
+          "email": "admin@hypershell.local",
+          "emailVerified": true,
+          "enabled": true,
           "credentials": [{ "type": "password", "value": "admin", "temporary": false }],
           "realmRoles": ["hypershell-admins", "hypershell-users"]
         },
         {
           "username": "developer",
-          "enabled": true,
-          "email": "developer@hypershell.local",
-          "emailVerified": true,
           "firstName": "Developer",
           "lastName": "User",
+          "email": "developer@hypershell.local",
+          "emailVerified": true,
+          "enabled": true,
           "credentials": [{ "type": "password", "value": "developer", "temporary": false }],
           "realmRoles": ["hypershell-users"]
         }
