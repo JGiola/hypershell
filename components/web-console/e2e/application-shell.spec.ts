@@ -534,6 +534,37 @@ test("provisions a gateway on an existing managed cluster", async ({
   });
 });
 
+test("shows the signed-in user and a full sign-out link", async ({ page }) => {
+  await page.route("**/auth/session", async (route) => {
+    await route.fulfill({
+      body: JSON.stringify({
+        authenticated: true,
+        expires_at: 1_723_401_600,
+        roles: ["hypershell-users"],
+        user: { name: "Ada Lovelace", preferred_username: "ada" },
+      }),
+      contentType: "application/json",
+      status: 200,
+    });
+  });
+
+  await page.goto("/");
+  const toggle = page.getByRole("button", { name: /Ada Lovelace/u });
+  await expect(toggle).toBeVisible();
+
+  // Accessibility of the shell with the identity toggle present. Axe runs with
+  // the menu closed: an open PatternFly dropdown portals to document.body and
+  // trips the landmark-region rule, which the other journeys also avoid.
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+
+  await toggle.click();
+  // Sign-out is a real navigation to the BFF, which performs RP-initiated
+  // Keycloak logout; it must not be a client-side route.
+  const logout = page.getByRole("menuitem", { name: "Log out" });
+  await expect(logout).toHaveAttribute("href", "/auth/logout");
+});
+
 test("reflows the gateway table without horizontal page overflow", async ({
   page,
 }) => {
