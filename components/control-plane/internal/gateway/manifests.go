@@ -212,6 +212,37 @@ func injectPGDATA(obj *unstructured.Unstructured, mountPath string) {
 func ApplyConfigOverrides(obj *unstructured.Unstructured, config GatewayConfig, tenantNamespace ...string) error {
 	kind := obj.GetKind()
 
+	if kind == "ConfigMap" && obj.GetName() == "openshell-gateway-config" && config.Route.Enabled {
+		data, found, err := unstructured.NestedMap(obj.Object, "data")
+		if err != nil {
+			return fmt.Errorf("read configmap data: %w", err)
+		}
+		if !found {
+			return fmt.Errorf("configmap data not found")
+		}
+		toml, ok := data["gateway.toml"].(string)
+		if !ok {
+			return fmt.Errorf("gateway.toml not found in configmap")
+		}
+		var filtered []string
+		for _, line := range strings.Split(toml, "\n") {
+			if strings.HasPrefix(strings.TrimSpace(line), "client_ca_path") {
+				continue
+			}
+			filtered = append(filtered, line)
+		}
+		data["gateway.toml"] = strings.Join(filtered, "\n")
+		if err := unstructured.SetNestedMap(obj.Object, data, "data"); err != nil {
+			return fmt.Errorf("set configmap data: %w", err)
+		}
+	}
+
+	if kind == "Deployment" && obj.GetName() == "openshell-gateway" && config.Route.Enabled {
+		if err := removeClientCAVolume(obj); err != nil {
+			return fmt.Errorf("remove client CA volume: %w", err)
+		}
+	}
+
 	if kind == "ConfigMap" && obj.GetName() == "openshell-gateway-config" && (len(config.ServerDnsNames) > 0 || config.CredentialDriver != nil) {
 		data, found, err := unstructured.NestedMap(obj.Object, "data")
 		if err != nil || !found {
@@ -497,5 +528,67 @@ func applyCredentialDriverDeploymentOverrides(obj *unstructured.Unstructured, dr
 		}
 	}
 
+	return nil
+}
+
+func removeClientCAVolume(obj *unstructured.Unstructured) error {
+	volumes, found, err := unstructured.NestedSlice(obj.Object, "spec", "template", "spec", "volumes")
+	if err != nil {
+		return fmt.Errorf("read volumes: %w", err)
+	}
+	if found {
+		var filtered []interface{}
+		for _, v := range volumes {
+			vm, ok := v.(map[string]interface{})
+			if !ok {
+				filtered = append(filtered, v)
+				continue
+			}
+			if vm["name"] == "tls-client-ca" {
+				continue
+			}
+			filtered = append(filtered, v)
+		}
+		if err := unstructured.SetNestedSlice(obj.Object, filtered, "spec", "template", "spec", "volumes"); err != nil {
+			return fmt.Errorf("set volumes: %w", err)
+		}
+	}
+
+	containers, found, err := unstructured.NestedSlice(obj.Object, "spec", "template", "spec", "containers")
+	if err != nil {
+		return fmt.Errorf("read containers: %w", err)
+	}
+	if !found {
+		return nil
+	}
+	for i, c := range containers {
+		container, ok := c.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		mounts, _, err := unstructured.NestedSlice(container, "volumeMounts")
+		if err != nil {
+			return fmt.Errorf("read volume mounts for container %d: %w", i, err)
+		}
+		var filteredMounts []interface{}
+		for _, m := range mounts {
+			mm, ok := m.(map[string]interface{})
+			if !ok {
+				filteredMounts = append(filteredMounts, m)
+				continue
+			}
+			if mm["name"] == "tls-client-ca" {
+				continue
+			}
+			filteredMounts = append(filteredMounts, m)
+		}
+		if err := unstructured.SetNestedSlice(container, filteredMounts, "volumeMounts"); err != nil {
+			return fmt.Errorf("set volume mounts for container %d: %w", i, err)
+		}
+		containers[i] = container
+	}
+	if err := unstructured.SetNestedSlice(obj.Object, containers, "spec", "template", "spec", "containers"); err != nil {
+		return fmt.Errorf("set containers: %w", err)
+	}
 	return nil
 }
