@@ -442,6 +442,66 @@ func waitForSecret(ctx context.Context, clientset *kubernetes.Clientset, namespa
 	}
 }
 
+// GatewayDeploymentName is the name of the primary gateway workload Deployment
+// whose readiness gates the Gateway `Running` phase.
+const GatewayDeploymentName = "openshell-gateway"
+
+// DeploymentReadiness performs a single, non-blocking check of a Deployment's
+// readiness. It returns ready=true when ready replicas meet or exceed desired
+// replicas. When the Deployment is not ready, reason carries a short
+// human-readable descriptor (e.g. "1/2 replicas ready" or "deployment not
+// found") suitable for the Gateway `status` field.
+func DeploymentReadiness(ctx context.Context, clientset *kubernetes.Clientset, namespace, name string) (ready bool, reason string, err error) {
+	deploy, err := clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return false, "deployment not found", nil
+		}
+		return false, "", fmt.Errorf("get deployment %s/%s: %w", namespace, name, err)
+	}
+
+	desired := int32(1)
+	if deploy.Spec.Replicas != nil {
+		desired = *deploy.Spec.Replicas
+	}
+	if deploy.Status.ReadyReplicas >= desired {
+		return true, "", nil
+	}
+	return false, fmt.Sprintf("%d/%d replicas ready", deploy.Status.ReadyReplicas, desired), nil
+}
+
+// WaitForGatewayReady blocks until the openshell-gateway Deployment reaches
+// readiness or the timeout elapses. It returns ready=true on readiness, or
+// ready=false with the last observed reason when the provisioning readiness
+// window expires without the workload becoming ready.
+func WaitForGatewayReady(ctx context.Context, clientset *kubernetes.Clientset, namespace string, timeout time.Duration) (bool, string) {
+	deadline := time.After(timeout)
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	lastReason := "not ready"
+	for {
+		select {
+		case <-ctx.Done():
+			return false, ctx.Err().Error()
+		case <-deadline:
+			return false, lastReason
+		case <-ticker.C:
+			ready, reason, err := DeploymentReadiness(ctx, clientset, namespace, GatewayDeploymentName)
+			if err != nil {
+				lastReason = err.Error()
+				continue
+			}
+			if ready {
+				return true, ""
+			}
+			if reason != "" {
+				lastReason = reason
+			}
+		}
+	}
+}
+
 func waitForDeploymentReady(ctx context.Context, clientset *kubernetes.Clientset, namespace, name string, timeout time.Duration) error {
 	deadline := time.After(timeout)
 	ticker := time.NewTicker(2 * time.Second)
@@ -891,11 +951,20 @@ func reconcileKeycloakClient(ctx context.Context, opts ReconcileOpts, nsConfig N
 
 	oidcConfig := OIDCConfig{
 		Issuer:     kc.Issuer(),
+		ClientID:   gatewayName,
 		Audience:   gatewayName,
 		JwksTTL:    3600,
 		RolesClaim: "hypershell.roles",
 		AdminRole:  "openshell-admin",
 		UserRole:   "openshell-user",
+	}
+	// The Keycloak Admin API server URL must be reachable in-cluster, but the
+	// gateway's client-facing issuer (consumed by the gateway pod, console, and
+	// CLI) may need to be a separately reachable URL. When GATEWAY_OIDC_ISSUER_URL
+	// is set it overrides the admin-derived issuer; it MUST equal Keycloak's
+	// KC_HOSTNAME so the token `iss` claim validates. Unset preserves 98's default.
+	if issuerURL := os.Getenv("GATEWAY_OIDC_ISSUER_URL"); issuerURL != "" {
+		oidcConfig.Issuer = issuerURL
 	}
 	nsConfig.Gateway.OIDC = oidcConfig
 
@@ -1234,6 +1303,19 @@ func reconcileGatewayAPIResources(ctx context.Context, dynamicClient dynamic.Int
 		hostname = fmt.Sprintf("%s.%s", firstLabel, baseDomain)
 	}
 
+	// Publish the deterministic route address immediately. The hostname is known
+	// before the per-tenant Gateway reports Accepted/Programmed, so the connection
+	// command is available to the CLI and console while the gateway finishes
+	// provisioning. Readiness is reflected separately by the Gateway phase.
+	if opts.UpdateRouteAddress != nil {
+		routeAddress := fmt.Sprintf("grpcs://%s:443", hostname)
+		if err := opts.UpdateRouteAddress(ctx, routeAddress); err != nil {
+			log.Printf("WARN failed to publish routeAddress %s for gateway in %s: %v", routeAddress, namespace, err)
+		} else {
+			log.Printf("INFO published routeAddress %s for gateway in %s", routeAddress, namespace)
+		}
+	}
+
 	gwNS := gatewayIngressNamespace()
 	sharedGwName := gatewayIngressName()
 	gwName := "gw-" + namespace
@@ -1497,68 +1579,11 @@ func reconcileGatewayAPIResources(ctx context.Context, dynamicClient dynamic.Int
 		log.Printf("WARN failed to reconcile router NetworkPolicy: %v", err)
 	}
 
-	// R15/R16: Check Gateway status conditions and publish routeAddress once
-	// the per-tenant Gateway reports Accepted+Programmed.
-	if opts.UpdateRouteAddress != nil {
-		gwGVR := schema.GroupVersionResource{
-			Group:    "gateway.networking.k8s.io",
-			Version:  "v1",
-			Resource: "gateways",
-		}
-		gwObj, err := dynamicClient.Resource(gwGVR).Namespace(gwNS).Get(ctx, gwName, metav1.GetOptions{})
-		if err != nil {
-			log.Printf("WARN failed to get Gateway status for routeAddress discovery: %v", err)
-		} else if gatewayConditionsMet(gwObj) {
-			routeAddress := fmt.Sprintf("grpcs://%s:443", hostname)
-			if err := opts.UpdateRouteAddress(ctx, routeAddress); err != nil {
-				log.Printf("WARN failed to publish routeAddress %s for gateway in %s: %v", routeAddress, namespace, err)
-			} else {
-				log.Printf("INFO published routeAddress %s for gateway in %s", routeAddress, namespace)
-			}
-		} else {
-			log.Printf("DEBUG Gateway not yet ready in %s, deferring routeAddress update", namespace)
-		}
-	}
+	// The route address is published deterministically at the top of this
+	// function, so no readiness-gated discovery is required here.
 
 	log.Printf("INFO Gateway API resources reconciled in namespace %s (hostname=%s)", namespace, hostname)
 	return nil
-}
-
-// gatewayConditionsMet returns true when the Gateway API Gateway resource
-// reports both Accepted: True and Programmed: True status conditions.
-func gatewayConditionsMet(gw *unstructured.Unstructured) bool {
-	generation, _, _ := unstructured.NestedInt64(gw.Object, "metadata", "generation")
-	conditions, found, _ := unstructured.NestedSlice(gw.Object, "status", "conditions")
-	if !found {
-		return false
-	}
-	accepted := false
-	programmed := false
-	for _, c := range conditions {
-		cond, ok := c.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		var obsGen int64
-		switch v := cond["observedGeneration"].(type) {
-		case int64:
-			obsGen = v
-		case float64:
-			obsGen = int64(v)
-		}
-		if obsGen < generation {
-			continue
-		}
-		condType, _ := cond["type"].(string)
-		condStatus, _ := cond["status"].(string)
-		if condType == "Accepted" && condStatus == "True" {
-			accepted = true
-		}
-		if condType == "Programmed" && condStatus == "True" {
-			programmed = true
-		}
-	}
-	return accepted && programmed
 }
 
 func reconcileCertManagerResources(ctx context.Context, dynamicClient dynamic.Interface, nsConfig NamespaceConfig) error {
