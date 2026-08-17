@@ -3,6 +3,8 @@ package gateway
 import (
 	"context"
 	"os"
+
+	"github.com/openshift-online/hypershell/components/control-plane/internal/exposure"
 )
 
 // ImageDefaults resolves the default container images for gateway deployments.
@@ -143,6 +145,10 @@ type ReconcileOpts struct {
 	// KeycloakClient is a Keycloak Admin REST API client for cleanup operations.
 	// Used during gateway deletion to remove the Keycloak OIDC client.
 	KeycloakClient KeycloakClientAPI
+	// Exposure is the Gateway Exposure port used to resolve the external route
+	// address. Nil when no exposure backend is configured (e.g. clusters without
+	// the Gateway API), in which case no route address is published.
+	Exposure exposure.Port
 }
 
 // KeycloakClientAPI is the subset of keycloak.Client needed by the gateway package.
