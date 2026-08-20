@@ -253,7 +253,7 @@ func (c *Client) createClient(ctx context.Context, gatewayName string) (string, 
 			deviceAuthorizationGrantAttribute: "true",
 		},
 		"defaultClientScopes": []string{
-			"openid", "profile", "email", "roles", "gateway-roles", "web-origins", "acr",
+			"profile", "email", "roles", "web-origins", "acr",
 		},
 		"protocolMappers": []map[string]interface{}{
 			{
