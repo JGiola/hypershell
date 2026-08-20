@@ -176,7 +176,7 @@ workloads, so a deletion cannot leave those orphaned.
 kind: Gateway
 name: openshell-gateway
 project: tenant-a
-image: ghcr.io/nvidia/openshell/gateway:21da343c9f838bd9ac85dc61bf44889de1a72873
+image: ghcr.io/nvidia/openshell/gateway:0.0.109
 serverDnsNames:
   - openshell-gateway.tenant-a.svc.cluster.local
 database:
@@ -190,7 +190,7 @@ database:
 kind: Gateway
 name: openshell-gateway
 project: tenant-a
-image: ghcr.io/nvidia/openshell/gateway:21da343c9f838bd9ac85dc61bf44889de1a72873
+image: ghcr.io/nvidia/openshell/gateway:0.0.109
 serverDnsNames:
   - openshell-gateway.tenant-a.svc.cluster.local
 ```
