@@ -700,15 +700,15 @@ func deployGateway(
 				return fmt.Errorf("apply config overrides for %s: %w", filename, err)
 			}
 
-			if obj.GetKind() == "Deployment" || obj.GetKind() == "StatefulSet" {
+			if obj.GetKind() == "Deployment" {
 				applyConfigHashAnnotation(ctx, clientset, obj, nsConfig.Name)
 			}
 
-			if hasTrustedCA && (obj.GetKind() == "Deployment" || obj.GetKind() == "StatefulSet") {
+			if hasTrustedCA && obj.GetKind() == "Deployment" {
 				applyTrustedCAOverrides(obj)
 			}
 
-			if opts.IsOpenShift && (obj.GetKind() == "Deployment" || obj.GetKind() == "StatefulSet") {
+			if opts.IsOpenShift && obj.GetKind() == "Deployment" {
 				applyOpenShiftOverrides(obj)
 			}
 
