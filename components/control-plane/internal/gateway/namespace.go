@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -13,14 +14,30 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// Labels createNamespace stamps on every gateway namespace. Garbage collection
-// only ever deletes namespaces carrying BOTH labels, so a Gateway pointed at a
-// pre-existing shared namespace can never cause that namespace to be reaped.
+// Labels createNamespace stamps on managed namespaces. Gateway namespace garbage
+// collection sweeps managed namespaces whose names match the gateway prefix
+// (openshell-<hex>) and excludes ManagedDatabase namespaces (openshell-db-<hex>).
 const (
 	ManagedByLabel    = "app.kubernetes.io/managed-by"
 	ManagedByValue    = "hypershell-control-plane"
 	ManagedLabel      = "hypershell.redhat.io/managed"
 	ManagedLabelValue = "true"
+
+	// GatewayNamespacePrefix and DatabaseNamespacePrefix mirror the namespace names
+	// the API server assigns in its BeforeCreate hooks (gatewayNamespacePrefix in
+	// components/api-server/plugins/gateways/model.go and dbNamespacePrefix in
+	// components/api-server/plugins/managedDatabases/model.go). Both produce
+	// "<prefix><16 hex chars>", and both namespace kinds carry the same management
+	// labels, so GC cannot tell them apart by label alone and falls back to the name.
+	//
+	// The trailing dash in DatabaseNamespacePrefix is load-bearing: a gateway hash
+	// may legitimately begin with the hex letters "db" (e.g. openshell-db1a2b...),
+	// but never with "openshell-db-" because the character after "db" is always a
+	// hex digit, never a dash. Keep these two constants in sync with the API server;
+	// if that naming ever changes, gateway GC would silently start reaping (or
+	// sparing) the wrong namespaces.
+	GatewayNamespacePrefix  = "openshell-"
+	DatabaseNamespacePrefix = "openshell-db-"
 
 	// GCEligibleSinceAnnotation records, in RFC3339, when a managed namespace was
 	// first observed orphaned (no live Gateway). The grace period is measured
@@ -39,10 +56,24 @@ func IsManagedNamespace(ns *corev1.Namespace) bool {
 		ns.Labels[ManagedByLabel] == ManagedByValue
 }
 
+// IsGatewayNamespaceForGC reports whether ns is a gateway workload namespace
+// subject to gateway namespace garbage collection. ManagedDatabase CNPG
+// namespaces (openshell-db-*) carry the same management labels but are owned by
+// the ManagedDatabase reconciler. Name-prefix matching keeps pre-existing orphaned
+// gateway namespaces eligible for periodic GC without a label migration.
+func IsGatewayNamespaceForGC(ns *corev1.Namespace) bool {
+	if !IsManagedNamespace(ns) {
+		return false
+	}
+	return strings.HasPrefix(ns.Name, GatewayNamespacePrefix) &&
+		!strings.HasPrefix(ns.Name, DatabaseNamespacePrefix)
+}
+
 // DeleteManagedNamespace deletes a gateway namespace, best-effort and
-// idempotent. It only deletes namespaces this control plane manages (see
-// IsManagedNamespace): an unmanaged or already-absent namespace is treated as a
-// no-op success. It returns deleted=true only when a delete call was issued.
+// idempotent. It only deletes namespaces subject to gateway namespace GC (see
+// IsGatewayNamespaceForGC): an unmanaged, non-gateway, or already-absent
+// namespace is treated as a no-op success. It returns deleted=true only when a
+// delete call was issued.
 func DeleteManagedNamespace(ctx context.Context, client kubernetes.Interface, namespace string) (bool, error) {
 	ns, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
@@ -52,8 +83,8 @@ func DeleteManagedNamespace(ctx context.Context, client kubernetes.Interface, na
 		}
 		return false, fmt.Errorf("get namespace %s: %w", namespace, err)
 	}
-	if !IsManagedNamespace(ns) {
-		log.Printf("INFO namespace %s is not managed by hypershell-control-plane, skipping deletion", namespace)
+	if !IsGatewayNamespaceForGC(ns) {
+		log.Printf("INFO namespace %s is not a gateway workload namespace, skipping deletion", namespace)
 		return false, nil
 	}
 	if ns.DeletionTimestamp != nil {

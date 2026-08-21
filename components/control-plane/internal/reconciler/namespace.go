@@ -168,9 +168,9 @@ func (r *NamespaceGCReconciler) grpcLiveNamespaces(ctx context.Context) (map[str
 // namespaces backed by a live Gateway and reaps it if it has been orphaned past
 // the grace period. It is best-effort and idempotent.
 func (r *NamespaceGCReconciler) reconcileNamespace(ctx context.Context, ns *corev1.Namespace, live map[string]struct{}) error {
-	// Defense in depth: only ever act on namespaces this control plane manages,
-	// even if the server-side label selector over-returns.
-	if !gateway.IsManagedNamespace(ns) {
+	// Defense in depth: only gateway workload namespaces are subject to this
+	// reconciler, even if the server-side label selector over-returns.
+	if !gateway.IsGatewayNamespaceForGC(ns) {
 		return nil
 	}
 	// A namespace already terminating needs no further action.
@@ -268,8 +268,14 @@ func (r *NamespaceGCReconciler) recordGCEvent(ctx context.Context, namespace, me
 			Namespace:    r.cpNamespace,
 		},
 		InvolvedObject: corev1.ObjectReference{
-			Kind: "Namespace",
-			Name: namespace,
+			APIVersion: "v1",
+			Kind:       "Namespace",
+			Name:       namespace,
+			// The Event lives in the control-plane namespace so it outlives the
+			// reaped namespace. Kubernetes requires involvedObject.namespace to
+			// match event.namespace for namespaced Events; Name still identifies
+			// the gateway namespace that was garbage collected.
+			Namespace: r.cpNamespace,
 		},
 		Reason:         "GarbageCollected",
 		Message:        message,

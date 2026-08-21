@@ -46,6 +46,33 @@ func TestIsManagedNamespace(t *testing.T) {
 	}
 }
 
+func TestIsGatewayNamespaceForGC(t *testing.T) {
+	tests := []struct {
+		name string
+		ns   string
+		want bool
+	}{
+		{"gateway namespace", "openshell-a14873d1631f1b74", true},
+		{"e2e orphan", "openshell-e2e-orphan-123", true},
+		// A gateway hash may begin with the hex letters "db"; the trailing dash in
+		// the database prefix keeps it classified as a gateway namespace.
+		{"gateway hash starting with db", "openshell-db1a2b3c4d5e6f70", true},
+		{"managed database namespace", "openshell-db-a1b2c3d4e5f67890", false},
+		{"unmanaged", "openshell-gw", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ns := managedNamespace(tt.ns, nil)
+			if tt.name == "unmanaged" {
+				ns.Labels = nil
+			}
+			if got := IsGatewayNamespaceForGC(ns); got != tt.want {
+				t.Errorf("IsGatewayNamespaceForGC() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestDeleteManagedNamespace(t *testing.T) {
 	ctx := context.Background()
 
@@ -75,6 +102,20 @@ func TestDeleteManagedNamespace(t *testing.T) {
 		}
 		if _, err := client.CoreV1().Namespaces().Get(ctx, "shared", metav1.GetOptions{}); err != nil {
 			t.Errorf("unmanaged namespace should be preserved, err = %v", err)
+		}
+	})
+
+	t.Run("skips a managed database namespace", func(t *testing.T) {
+		client := fake.NewSimpleClientset(managedNamespace("openshell-db-a1b2c3d4e5f67890", nil))
+		deleted, err := DeleteManagedNamespace(ctx, client, "openshell-db-a1b2c3d4e5f67890")
+		if err != nil {
+			t.Fatalf("DeleteManagedNamespace() error = %v", err)
+		}
+		if deleted {
+			t.Errorf("deleted = true, want false for ManagedDatabase namespace")
+		}
+		if _, err := client.CoreV1().Namespaces().Get(ctx, "openshell-db-a1b2c3d4e5f67890", metav1.GetOptions{}); err != nil {
+			t.Errorf("ManagedDatabase namespace should be preserved, err = %v", err)
 		}
 	})
 
