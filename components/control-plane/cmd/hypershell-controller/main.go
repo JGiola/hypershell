@@ -33,6 +33,10 @@ import (
 
 const defaultManifestsDir = "/manifests/gateway"
 
+func managedDatabaseWatchEligible(clientset *kubernetes.Clientset, dynamicClient dynamic.Interface) bool {
+	return clientset != nil && dynamicClient != nil
+}
+
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
@@ -40,7 +44,7 @@ func main() {
 	}
 
 	log.Printf("INFO hypershell-controller starting")
-	log.Printf("INFO grpc=%s api=%s namespace=%s", cfg.GRPCServerAddr, cfg.APIServerURL, cfg.Namespace)
+	log.Printf("INFO grpc=%s api=%s namespace=%s database_provider=%s", cfg.GRPCServerAddr, cfg.APIServerURL, cfg.Namespace, cfg.DatabaseProvider)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
@@ -112,6 +116,23 @@ func main() {
 		}
 	}
 
+	// DATABASE_PROVIDER=cnpg is a hard startup precondition: the control plane
+	// must fail cleanly here, before any watch/reconcile loop starts, when the
+	// exact CNPG API resources this codebase depends on (clusters, databases,
+	// databaseroles in postgresql.cnpg.io/v1) are not served, rather than
+	// deferring the failure to the first CNPG-backed reconciliation deep
+	// inside the gateway/database reconcilers. DATABASE_PROVIDER=deployment (the
+	// default) never reaches this check and has no CNPG dependency at all.
+	if cfg.DatabaseProvider == config.DatabaseProviderCNPG {
+		if clientset == nil {
+			log.Fatalf("DATABASE_PROVIDER=cnpg requires an in-cluster Kubernetes client to verify the CNPG API prerequisites")
+		}
+		if err := gateway.RequireCNPGAPI(clientset); err != nil {
+			log.Fatalf("%v", err)
+		}
+		log.Printf("INFO CNPG API prerequisites verified for DATABASE_PROVIDER=cnpg")
+	}
+
 	// The Gateway Exposure port decouples route-address resolution and readiness
 	// observation from the concrete ingress backend. Select the adapter by the
 	// SAME effective ingress mode the reconciler uses to emit ingress resources
@@ -144,7 +165,12 @@ func main() {
 
 	fleetReconciler := reconciler.NewFleetReconciler()
 	clusterReconciler := reconciler.NewManagedClusterReconciler()
-	databaseReconciler := reconciler.NewManagedDatabaseReconciler(dynamicClient, clientset, conn)
+	var databaseReconciler watcher.Handler[*pb.ManagedDatabase]
+	if managedDatabaseWatchEligible(clientset, dynamicClient) {
+		databaseReconciler = reconciler.NewManagedDatabaseReconciler(dynamicClient, clientset, conn)
+	} else {
+		log.Printf("WARN ManagedDatabase watch disabled: both Kubernetes typed and dynamic clients are required")
+	}
 	releaseReconciler := reconciler.NewGatewayReleaseReconciler()
 	networkReconciler := reconciler.NewGatewayNetworkReconciler()
 
@@ -203,9 +229,12 @@ func main() {
 		gatewayReconciler = reconciler.NewStubGatewayReconciler()
 	}
 
-	watchCount := 6
+	watchCount := 5 // fleets, managed clusters, gateway releases, gateways, networks
+	if databaseReconciler != nil {
+		watchCount++
+	}
 	if roleBindingReconciler != nil {
-		watchCount = 7
+		watchCount++
 	}
 	// +4 for the continuous gateway health, namespace GC, sandbox-count, and
 	// internal service-account provisioner goroutines.
@@ -226,7 +255,9 @@ func main() {
 
 	go func() { errCh <- watcher.WatchFleets(ctx, conn, fleetReconciler) }()
 	go func() { errCh <- watcher.WatchManagedClusters(ctx, conn, clusterReconciler) }()
-	go func() { errCh <- watcher.WatchManagedDatabases(ctx, conn, databaseReconciler) }()
+	if databaseReconciler != nil {
+		go func() { errCh <- watcher.WatchManagedDatabases(ctx, conn, databaseReconciler) }()
+	}
 	go func() { errCh <- watcher.WatchGatewayReleases(ctx, conn, releaseReconciler) }()
 	go func() { errCh <- watcher.WatchGateways(ctx, conn, gatewayReconciler) }()
 	go func() { errCh <- watcher.WatchGatewayNetworks(ctx, conn, networkReconciler) }()
